@@ -6,5 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ChatRole {
-    USER, ASSISTANT;
+    USER("user"), ASSISTANT("assistant");
+
+    private String value;
 }
