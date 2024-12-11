@@ -5,6 +5,8 @@ import com.education.conversation.dto.MessageRequestDto;
 import com.education.conversation.dto.MessageResponseDto;
 import com.education.conversation.dto.MessageType;
 import com.education.conversation.entities.ChatMessage;
+import com.education.conversation.exceptions.ErrorResponseException;
+import com.education.conversation.exceptions.ErrorStatus;
 import com.education.conversation.repositories.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,19 +19,22 @@ public class ChatMessageService {
     private final OpenAiService openAiService;
 
     public MessageResponseDto handleTextMessage(MessageRequestDto messageRequestDto) {
-        String response = openAiService.fetchResponse(messageRequestDto.getContent());
+        ChatMessage chatMessage = buildUserChatMessage(messageRequestDto.getContent(), ChatRole.USER);
+        try {
+            String response = openAiService.fetchResponse(messageRequestDto.getContent());
+            return MessageResponseDto.makeMessageResponseDto(
+                    buildUserChatMessage(response, ChatRole.ASSISTANT));
+        } catch (Exception e) {
+            throw new ErrorResponseException(ErrorStatus.OPENAI_CONNECTION_ERROR);
+        } finally {
+            chatMessageRepository.save(chatMessage.setErrorDetails(ErrorStatus.OPENAI_CONNECTION_ERROR.getMessage()));
+        }
+    }
 
-        chatMessageRepository.save(new ChatMessage()
-                .setContent(messageRequestDto.getContent())
-                .setRole(ChatRole.USER)
+    private ChatMessage buildUserChatMessage(String content, ChatRole chatRole) {
+        return new ChatMessage()
+                .setContent(content)
                 .setMessageType(MessageType.TEXT)
-        );
-
-        return MessageResponseDto.makeMessageResponseDto(
-                chatMessageRepository.save(new ChatMessage()
-                        .setMessageType(MessageType.TEXT)
-                        .setContent(response)
-                        .setRole(ChatRole.ASSISTANT)
-                ));
+                .setRole(chatRole);
     }
 }
