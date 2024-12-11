@@ -22,12 +22,13 @@ public class ChatMessageService {
         ChatMessage chatMessage = buildUserChatMessage(messageRequestDto.getContent(), ChatRole.USER);
         try {
             String response = openAiService.fetchResponse(messageRequestDto.getContent());
-            return MessageResponseDto.makeMessageResponseDto(
-                    buildUserChatMessage(response, ChatRole.ASSISTANT));
+            return MessageResponseDto.makeMessageResponseDto(chatMessageRepository.save(
+                    buildUserChatMessage(response, ChatRole.ASSISTANT)));
         } catch (Exception e) {
-            throw new ErrorResponseException(ErrorStatus.OPENAI_CONNECTION_ERROR);
-        } finally {
-            chatMessageRepository.save(chatMessage.setErrorDetails(ErrorStatus.OPENAI_CONNECTION_ERROR.getMessage()));
+            return MessageResponseDto.makeMessageResponseDto(
+                    chatMessageRepository.save(
+                            chatMessage.setErrorDetails(ErrorStatus.OPENAI_CONNECTION_ERROR.getMessage()))
+            );
         }
     }
 
