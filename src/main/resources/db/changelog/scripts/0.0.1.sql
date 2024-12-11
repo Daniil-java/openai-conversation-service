@@ -14,6 +14,6 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 );
 
 
-CREATE INDEX idx_role ON messages(role);
-CREATE INDEX idx_message_type ON messages(message_type);
-CREATE INDEX idx_created ON messages(created);
+CREATE INDEX idx_role ON chat_messages(role);
+CREATE INDEX idx_message_type ON chat_messages(message_type);
+CREATE INDEX idx_created ON chat_messages(created);
