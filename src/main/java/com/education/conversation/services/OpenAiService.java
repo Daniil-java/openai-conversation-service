@@ -20,16 +20,16 @@ public class OpenAiService {
     }
 
     //Отправка запроса и получение ответа OpenAI
-    public String fetchResponse(String request) {
-        return getContent(openAiFeignClient.generate(
+    public OpenAiChatCompletionResponse fetchResponse(String request) {
+        return openAiFeignClient.generate(
                 "Bearer " + aiKey,
                 OpenAiChatCompletionRequest.makeRequest(request)
-        ));
+        );
     }
 
     // Читаем JSON в указанный тип T
     private<T> T fetchResponseAndReadJson(String request, Class<T> responseType) throws JsonProcessingException {
-        return new ObjectMapper().readValue(fetchResponse(request), responseType);
+        return new ObjectMapper().readValue(getContent(fetchResponse(request)), responseType);
     }
 
 

@@ -1,9 +1,7 @@
 package com.education.conversation.services;
 
-import com.education.conversation.dto.ChatRole;
-import com.education.conversation.dto.MessageRequestDto;
-import com.education.conversation.dto.MessageResponseDto;
-import com.education.conversation.dto.MessageType;
+import com.education.conversation.dto.*;
+import com.education.conversation.dto.openai.OpenAiChatCompletionResponse;
 import com.education.conversation.entities.ChatMessage;
 import com.education.conversation.exceptions.ErrorResponseException;
 import com.education.conversation.exceptions.ErrorStatus;
@@ -19,23 +17,28 @@ public class ChatMessageService {
     private final OpenAiService openAiService;
 
     public MessageResponseDto handleTextMessage(MessageRequestDto messageRequestDto) {
-        ChatMessage chatMessage = buildUserChatMessage(messageRequestDto.getContent(), ChatRole.USER);
+        return MessageResponseDto.makeMessageResponseDto(
+                processUserMessage(createAndSaveNewUserMessage(messageRequestDto.getContent()))
+        );
+    }
+
+    private ChatMessage processUserMessage(ChatMessage userMessage) {
         try {
-            String response = openAiService.fetchResponse(messageRequestDto.getContent());
-            return MessageResponseDto.makeMessageResponseDto(chatMessageRepository.save(
-                    buildUserChatMessage(response, ChatRole.ASSISTANT)));
+            OpenAiChatCompletionResponse response = openAiService.fetchResponse(userMessage.getContent());
+            ChatMessage assistantMessage = ChatMessage.newAssistantMessage(response);
+            userMessage.setStatus(MessageStatus.DONE);
+            chatMessageRepository.save(userMessage);
+            return chatMessageRepository.save(assistantMessage);
         } catch (Exception e) {
-            return MessageResponseDto.makeMessageResponseDto(
-                    chatMessageRepository.save(
-                            chatMessage.setErrorDetails(ErrorStatus.OPENAI_CONNECTION_ERROR.getMessage()))
-            );
+            userMessage.setStatus(MessageStatus.ERROR);
+            userMessage.setErrorDetails(ErrorStatus.OPENAI_CONNECTION_ERROR.getMessage());
+            chatMessageRepository.save(userMessage);
+            throw new ErrorResponseException(ErrorStatus.OPENAI_CONNECTION_ERROR);
         }
     }
 
-    private ChatMessage buildUserChatMessage(String content, ChatRole chatRole) {
-        return new ChatMessage()
-                .setContent(content)
-                .setMessageType(MessageType.TEXT)
-                .setRole(chatRole);
+    private ChatMessage createAndSaveNewUserMessage(String content) {
+        return chatMessageRepository.save(ChatMessage.newUserMessage(content));
     }
+
 }

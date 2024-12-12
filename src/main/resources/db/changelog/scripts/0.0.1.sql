@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     role                        varchar(20) not null,
     content                     text,
     message_type                varchar(20) not null,
+    status                      varchar(20),
     error_details               text,
     input_token                 decimal,
     output_token                decimal,
