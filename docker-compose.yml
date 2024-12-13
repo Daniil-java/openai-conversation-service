@@ -11,7 +11,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=gptask
+      - POSTGRES_DB=conversation_db
     healthcheck:
       test: ["CMD", "pg_isready", "-q", "-U", "postgres"]
       interval: 5s
