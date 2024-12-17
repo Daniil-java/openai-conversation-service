@@ -1,5 +1,7 @@
 package com.education.conversation.dto.openai;
 
+import com.education.conversation.dto.ChatModel;
+import com.education.conversation.dto.ChatRole;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -13,17 +15,17 @@ public class OpenAiChatCompletionRequest {
     private List<Message> messages;
     private float temperature;
 
-    public static OpenAiChatCompletionRequest makeRequest(String request) {
+    public static OpenAiChatCompletionRequest makeRequest(String request, ChatModel chatModel, Float temperature) {
         //Хардкод. Меня устраивает в моём pet проекте. В промешленной экспл. вынесу в конфиг
         ArrayList<Message> messages = new ArrayList<>();
         messages.add(new Message()
-                .setRole("user")
+                .setRole(ChatRole.USER.getValue())
                 .setContent(request)
         );
 
         return new OpenAiChatCompletionRequest()
-                .setModel("gpt-3.5-turbo")
+                .setModel(chatModel.getModel())
                 .setMessages(messages)
-                .setTemperature(0.7f);
+                .setTemperature(temperature);
     }
 }

@@ -1,8 +1,8 @@
 package com.education.conversation.entities;
 
 import com.education.conversation.dto.ChatRole;
-import com.education.conversation.dto.MessageStatus;
-import com.education.conversation.dto.MessageType;
+import com.education.conversation.dto.message.MessageStatus;
+import com.education.conversation.dto.message.MessageType;
 import com.education.conversation.dto.openai.OpenAiChatCompletionResponse;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -30,6 +30,9 @@ public class ChatMessage {
     private BigDecimal inputToken;
     private BigDecimal outputToken;
     private MessageStatus status;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conversation_id")
+    private Conversation conversation;
     private OffsetDateTime created;
 
     public static ChatMessage newUserMessage(String content) {

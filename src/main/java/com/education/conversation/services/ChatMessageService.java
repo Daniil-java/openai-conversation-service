@@ -1,6 +1,8 @@
 package com.education.conversation.services;
 
-import com.education.conversation.dto.*;
+import com.education.conversation.dto.message.MessageRequestDto;
+import com.education.conversation.dto.message.MessageResponseDto;
+import com.education.conversation.dto.message.MessageStatus;
 import com.education.conversation.dto.openai.OpenAiChatCompletionResponse;
 import com.education.conversation.entities.ChatMessage;
 import com.education.conversation.exceptions.ErrorResponseException;
@@ -13,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,50 +24,67 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final OpenAiService openAiService;
     private final ExecutorService executorService;
+    private final ConversationService conversationService;
 
     public MessageResponseDto handleTextMessage(MessageRequestDto messageRequestDto) {
         return MessageResponseDto.makeMessageResponseDto(
-                processUserMessage(createAndSaveNewUserMessage(messageRequestDto.getContent()))
-        );
+                processUserMessage(messageRequestDto));
     }
 
-    private ChatMessage processUserMessage(ChatMessage userMessage) {
+    private ChatMessage processUserMessage(MessageRequestDto messageRequestDto) {
+        ChatMessage userMessage = createAndSaveNewUserMessage(messageRequestDto);
+        List<ChatMessage> chatMessageList =
+                chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationDto().getId());
+
         try {
-            OpenAiChatCompletionResponse response = openAiService.fetchResponse(userMessage.getContent());
+            OpenAiChatCompletionResponse response = openAiService
+                    .fetchResponse(userMessage, chatMessageList);
+
             ChatMessage assistantMessage = ChatMessage.newAssistantMessage(response);
+            assistantMessage.setConversation(userMessage.getConversation());
             userMessage.setStatus(MessageStatus.DONE);
+
             chatMessageRepository.save(userMessage);
             return chatMessageRepository.save(assistantMessage);
         } catch (Exception e) {
             userMessage.setStatus(MessageStatus.ERROR);
             userMessage.setErrorDetails(ErrorStatus.OPENAI_CONNECTION_ERROR.getMessage());
+
             chatMessageRepository.save(userMessage);
             throw new ErrorResponseException(ErrorStatus.OPENAI_CONNECTION_ERROR);
         }
     }
 
-    private ChatMessage createAndSaveNewUserMessage(String content) {
-        return chatMessageRepository.save(ChatMessage.newUserMessage(content));
+
+    private ChatMessage createAndSaveNewUserMessage(MessageRequestDto messageRequestDto) {
+        ChatMessage userMessage = ChatMessage.newUserMessage(messageRequestDto.getContent());
+        userMessage.setConversation(conversationService.getOrCreateByDto(messageRequestDto.getConversationDto()));
+
+        return chatMessageRepository.save(userMessage);
     }
 
     public List<MessageResponseDto> handleTextMessageForManyResponses(MessageRequestDto messageRequestDto) {
-        return processUserMessageWithResponses(createAndSaveNewUserMessage(messageRequestDto.getContent()))
+        return processUserMessageWithResponses(messageRequestDto)
                 .stream()
                 .map(MessageResponseDto::makeMessageResponseDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
 
-    private List<ChatMessage> processUserMessageWithResponses(ChatMessage userMessage) {
+    private List<ChatMessage> processUserMessageWithResponses(MessageRequestDto messageRequestDto) {
         int timeoutSeconds = 5;
         int requestCount = 5;
+
+        ChatMessage userMessage = createAndSaveNewUserMessage(messageRequestDto);
+        List<ChatMessage> conversationMessageList =
+                chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationDto().getId());
 
         ArrayList<ChatMessage> chatMessages = new ArrayList<>();
 
         //Concurrency
         List<Callable<OpenAiChatCompletionResponse>> tasks = new ArrayList<>();
         for (int i = 0; i < requestCount; i++) {
-            tasks.add(() -> openAiService.fetchResponse(userMessage.getContent()));
+            tasks.add(() -> openAiService.fetchResponse(userMessage, conversationMessageList));
         }
 
         try {
