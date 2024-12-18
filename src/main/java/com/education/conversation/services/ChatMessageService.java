@@ -34,11 +34,11 @@ public class ChatMessageService {
     private ChatMessage processUserMessage(MessageRequestDto messageRequestDto) {
         ChatMessage userMessage = createAndSaveNewUserMessage(messageRequestDto);
         List<ChatMessage> chatMessageList =
-                chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationDto().getId());
+                chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationId());
 
         try {
             OpenAiChatCompletionResponse response = openAiService
-                    .fetchResponse(userMessage, chatMessageList);
+                    .fetchResponse(userMessage, chatMessageList, messageRequestDto.getTemperature());
 
             ChatMessage assistantMessage = ChatMessage.newAssistantMessage(response);
             assistantMessage.setConversation(userMessage.getConversation());
@@ -58,7 +58,7 @@ public class ChatMessageService {
 
     private ChatMessage createAndSaveNewUserMessage(MessageRequestDto messageRequestDto) {
         ChatMessage userMessage = ChatMessage.newUserMessage(messageRequestDto.getContent());
-        userMessage.setConversation(conversationService.getOrCreateByDto(messageRequestDto.getConversationDto()));
+        userMessage.setConversation(conversationService.getById(messageRequestDto.getConversationId()));
 
         return chatMessageRepository.save(userMessage);
     }
@@ -77,14 +77,15 @@ public class ChatMessageService {
 
         ChatMessage userMessage = createAndSaveNewUserMessage(messageRequestDto);
         List<ChatMessage> conversationMessageList =
-                chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationDto().getId());
+                chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationId());
 
         ArrayList<ChatMessage> chatMessages = new ArrayList<>();
 
         //Concurrency
         List<Callable<OpenAiChatCompletionResponse>> tasks = new ArrayList<>();
         for (int i = 0; i < requestCount; i++) {
-            tasks.add(() -> openAiService.fetchResponse(userMessage, conversationMessageList));
+            tasks.add(() -> openAiService.fetchResponse(
+                    userMessage, conversationMessageList, messageRequestDto.getTemperature()));
         }
 
         try {

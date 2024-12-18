@@ -21,7 +21,6 @@ public class Conversation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private ChatModel model;
-    private float temperature;
     @UpdateTimestamp
     private OffsetDateTime updated;
     @CreationTimestamp
@@ -30,14 +29,12 @@ public class Conversation {
     public static Conversation dtoToEntity(ConversationDto conversationDto) {
         return new Conversation()
                 .setId(conversationDto.getId())
-                .setModel(conversationDto.getModel())
-                .setTemperature(conversationDto.getTemperature());
+                .setModel(conversationDto.getModel());
     }
 
     public static ConversationDto entityToDto(Conversation conversation) {
         return new ConversationDto()
                 .setId(conversation.getId())
-                .setTemperature(conversation.getTemperature())
                 .setModel(conversation.getModel());
     }
 

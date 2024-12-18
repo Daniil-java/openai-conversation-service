@@ -27,14 +27,4 @@ public class ConversationService {
         return conversationRepository.findById(id)
                 .orElseThrow(() -> new ErrorResponseException(ErrorStatus.CONVERSATION_NOT_FOUND));
     }
-
-    public Conversation getOrCreateByDto(ConversationDto conversationDto) {
-        if (conversationDto == null) {
-            throw new ErrorResponseException(ErrorStatus.CONVERSATION_SPECIFIED_ERROR);
-        }
-
-        return conversationDto.getId() == null
-                        ? create(conversationDto)
-                        : getById(conversationDto.getId());
-    }
 }

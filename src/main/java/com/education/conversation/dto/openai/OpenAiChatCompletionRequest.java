@@ -15,6 +15,12 @@ public class OpenAiChatCompletionRequest {
     private List<Message> messages;
     private float temperature;
 
+    public static final float TEMPERATURE_DEFAULT = 0.1f;
+
+    public static OpenAiChatCompletionRequest makeRequest(String request, ChatModel chatModel) {
+        return makeRequest(request, chatModel, TEMPERATURE_DEFAULT);
+    }
+
     public static OpenAiChatCompletionRequest makeRequest(String request, ChatModel chatModel, Float temperature) {
         //Хардкод. Меня устраивает в моём pet проекте. В промешленной экспл. вынесу в конфиг
         ArrayList<Message> messages = new ArrayList<>();

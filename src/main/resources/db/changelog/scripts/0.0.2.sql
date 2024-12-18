@@ -5,7 +5,6 @@
 CREATE TABLE IF NOT EXISTS conversations (
     id                          serial not null PRIMARY KEY,
     model                       text not null,
-    temperature                 real default 0,
     updated                     timestamp,
     created                     timestamp DEFAULT current_timestamp
 );
