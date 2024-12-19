@@ -1,4 +1,4 @@
-package com.education.conversation.dto;
+package com.education.conversation.dto.message;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -5,6 +5,7 @@ import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class MessageRequestDto {
-    private String content;
+public class ConversationDto {
+    private Long id;
+    private String name;
 }

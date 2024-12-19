@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     id                          serial not null PRIMARY KEY,
     role                        varchar(20) not null,
     content                     text,
+    model                       text,
+    temperature                 decimal(2, 1),
     message_type                varchar(20) not null,
     status                      varchar(20),
     error_details               text,

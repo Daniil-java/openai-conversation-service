@@ -1,8 +1,10 @@
 package com.education.conversation.entities;
 
+import com.education.conversation.dto.ChatModel;
 import com.education.conversation.dto.ChatRole;
-import com.education.conversation.dto.MessageStatus;
-import com.education.conversation.dto.MessageType;
+import com.education.conversation.dto.message.MessageRequestDto;
+import com.education.conversation.dto.message.MessageStatus;
+import com.education.conversation.dto.message.MessageType;
 import com.education.conversation.dto.openai.OpenAiChatCompletionResponse;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -25,27 +27,36 @@ public class ChatMessage {
     @Enumerated(EnumType.STRING)
     private ChatRole role;
     private String content;
+    private ChatModel model;
+    private Float temperature;
     private MessageType messageType;
     private String errorDetails;
     private BigDecimal inputToken;
     private BigDecimal outputToken;
     private MessageStatus status;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conversation_id")
+    private Conversation conversation;
     private OffsetDateTime created;
 
-    public static ChatMessage newUserMessage(String content) {
+    public static ChatMessage newUserMessage(MessageRequestDto messageRequestDto, Conversation conversation) {
         return new ChatMessage()
-                .setContent(content)
+                .setContent(messageRequestDto.getContent())
                 .setMessageType(MessageType.TEXT)
                 .setRole(ChatRole.USER)
-                .setStatus(MessageStatus.NEW);
+                .setStatus(MessageStatus.NEW)
+                .setModel(messageRequestDto.getModel())
+                .setTemperature(messageRequestDto.getTemperature())
+                .setConversation(conversation);
     }
 
-    public static ChatMessage newAssistantMessage(OpenAiChatCompletionResponse response) {
+    public static ChatMessage newAssistantMessage(OpenAiChatCompletionResponse response, Conversation conversation) {
         return new ChatMessage()
                 .setContent(OpenAiChatCompletionResponse.getContent(response))
                 .setMessageType(MessageType.TEXT)
                 .setRole(ChatRole.ASSISTANT)
                 .setInputToken(BigDecimal.valueOf(response.getUsage().getPromptTokens()))
-                .setOutputToken(BigDecimal.valueOf(response.getUsage().getCompletionTokens()));
+                .setOutputToken(BigDecimal.valueOf(response.getUsage().getCompletionTokens()))
+                .setConversation(conversation);
     }
 }
