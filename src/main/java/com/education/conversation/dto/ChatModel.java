@@ -6,8 +6,16 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ChatModel {
-    GPT40("gpt-4o");
+    GPT4O("gpt-4o");
 
     private String model;
+
+    public static ChatModel getEnumOrNull(String value) {
+        try {
+            return ChatModel.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
 
 }

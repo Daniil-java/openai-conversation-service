@@ -1,10 +1,12 @@
 package com.education.conversation.services;
 
+import com.education.conversation.dto.ChatModel;
 import com.education.conversation.dto.message.MessageRequestDto;
 import com.education.conversation.dto.message.MessageResponseDto;
 import com.education.conversation.dto.message.MessageStatus;
 import com.education.conversation.dto.openai.OpenAiChatCompletionResponse;
 import com.education.conversation.entities.ChatMessage;
+import com.education.conversation.entities.Conversation;
 import com.education.conversation.exceptions.ErrorResponseException;
 import com.education.conversation.exceptions.ErrorStatus;
 import com.education.conversation.repositories.ChatMessageRepository;
@@ -32,7 +34,12 @@ public class ChatMessageService {
     }
 
     private ChatMessage processUserMessage(MessageRequestDto messageRequestDto) {
-        ChatMessage userMessage = createAndSaveNewUserMessage(messageRequestDto);
+        if (ChatModel.getEnumOrNull(messageRequestDto.getModel().name()) == null ) {
+            throw new ErrorResponseException(ErrorStatus.MODEL_NOT_SUPPORTED);
+        }
+
+        ChatMessage userMessage = makeUserMessage(messageRequestDto);
+
         List<ChatMessage> chatMessageList =
                 chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationId());
 
@@ -40,42 +47,23 @@ public class ChatMessageService {
             OpenAiChatCompletionResponse response = openAiService
                     .fetchResponse(userMessage, chatMessageList, messageRequestDto.getTemperature());
 
-            ChatMessage assistantMessage = ChatMessage.newAssistantMessage(response);
-            assistantMessage.setConversation(userMessage.getConversation());
+            ChatMessage assistantMessage = ChatMessage.newAssistantMessage(response, userMessage.getConversation());
             userMessage.setStatus(MessageStatus.DONE);
 
             chatMessageRepository.save(userMessage);
             return chatMessageRepository.save(assistantMessage);
         } catch (Exception e) {
-            userMessage.setStatus(MessageStatus.ERROR);
-            userMessage.setErrorDetails(ErrorStatus.OPENAI_CONNECTION_ERROR.getMessage());
-
-            chatMessageRepository.save(userMessage);
+            setStatusAndErrorDetails(userMessage, MessageStatus.ERROR, ErrorStatus.OPENAI_CONNECTION_ERROR);
             throw new ErrorResponseException(ErrorStatus.OPENAI_CONNECTION_ERROR);
         }
     }
-
-
-    private ChatMessage createAndSaveNewUserMessage(MessageRequestDto messageRequestDto) {
-        ChatMessage userMessage = ChatMessage.newUserMessage(messageRequestDto.getContent());
-        userMessage.setConversation(conversationService.getById(messageRequestDto.getConversationId()));
-
-        return chatMessageRepository.save(userMessage);
-    }
-
-    public List<MessageResponseDto> handleTextMessageForManyResponses(MessageRequestDto messageRequestDto) {
-        return processUserMessageWithResponses(messageRequestDto)
-                .stream()
-                .map(MessageResponseDto::makeMessageResponseDto)
-                .toList();
-    }
-
 
     private List<ChatMessage> processUserMessageWithResponses(MessageRequestDto messageRequestDto) {
         int timeoutSeconds = 5;
         int requestCount = 5;
 
-        ChatMessage userMessage = createAndSaveNewUserMessage(messageRequestDto);
+        ChatMessage userMessage = makeUserMessage(messageRequestDto);
+
         List<ChatMessage> conversationMessageList =
                 chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationId());
 
@@ -91,11 +79,10 @@ public class ChatMessageService {
         try {
             // Отправляем все задачи и получаем список Future
             List<Future<OpenAiChatCompletionResponse>> futures = executorService.invokeAll(tasks);
-
             try {
                 for (Future<OpenAiChatCompletionResponse> future : futures) {
-                    ChatMessage assistantMessage =
-                            ChatMessage.newAssistantMessage(future.get(timeoutSeconds, TimeUnit.SECONDS));
+                    ChatMessage assistantMessage = ChatMessage.newAssistantMessage(
+                            future.get(timeoutSeconds, TimeUnit.SECONDS), userMessage.getConversation());
 
                     chatMessages.add(chatMessageRepository.save(assistantMessage));
                 }
@@ -107,13 +94,38 @@ public class ChatMessageService {
             chatMessageRepository.save(userMessage);
 
         } catch (InterruptedException e) {
-            userMessage.setStatus(MessageStatus.ERROR);
-            userMessage.setErrorDetails(ErrorStatus.OPENAI_CONNECTION_ERROR.getMessage());
-            chatMessageRepository.save(userMessage);
+            setStatusAndErrorDetails(userMessage, MessageStatus.ERROR, ErrorStatus.OPENAI_CONNECTION_ERROR);
             throw new ErrorResponseException(ErrorStatus.OPENAI_CONNECTION_ERROR);
         }
 
         return chatMessages;
+    }
+
+    private ChatMessage makeUserMessage(MessageRequestDto messageRequestDto) {
+        Conversation conversation = conversationService
+                .getByIdOrThrowException(messageRequestDto.getConversationId());
+
+        if (conversation.getName() == null) {
+            conversation = conversationService.setNameForConversation(conversation, messageRequestDto.getContent());
+        }
+
+        ChatMessage userMessage = ChatMessage.newUserMessage(messageRequestDto);
+        userMessage.setConversation(conversation);
+
+        return chatMessageRepository.save(userMessage);
+    }
+
+    private void setStatusAndErrorDetails(ChatMessage userMessage, MessageStatus messageStatus, ErrorStatus errorStatus) {
+        userMessage.setStatus(messageStatus);
+        userMessage.setErrorDetails(errorStatus.getMessage());
+        chatMessageRepository.save(userMessage);
+    }
+
+    public List<MessageResponseDto> handleTextMessageForManyResponses(MessageRequestDto messageRequestDto) {
+        return processUserMessageWithResponses(messageRequestDto)
+                .stream()
+                .map(MessageResponseDto::makeMessageResponseDto)
+                .toList();
     }
 
 }

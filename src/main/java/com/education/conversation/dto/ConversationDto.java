@@ -7,6 +7,5 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class ConversationDto {
     private Long id;
-    private ChatModel model;
-    private float temperature;
+    private String name;
 }

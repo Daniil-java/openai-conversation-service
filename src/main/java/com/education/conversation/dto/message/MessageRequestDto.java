@@ -1,5 +1,6 @@
 package com.education.conversation.dto.message;
 
+import com.education.conversation.dto.ChatModel;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -12,4 +13,5 @@ public class MessageRequestDto {
     @NotNull
     private Long conversationId;
     private Float temperature;
+    private ChatModel model;
 }

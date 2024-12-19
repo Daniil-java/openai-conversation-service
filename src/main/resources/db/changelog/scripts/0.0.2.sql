@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS conversations (
     id                          serial not null PRIMARY KEY,
-    model                       text not null,
+    name                        text,
     updated                     timestamp,
     created                     timestamp DEFAULT current_timestamp
 );

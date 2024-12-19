@@ -20,7 +20,7 @@ public class Conversation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private ChatModel model;
+    private String name;
     @UpdateTimestamp
     private OffsetDateTime updated;
     @CreationTimestamp
@@ -29,13 +29,13 @@ public class Conversation {
     public static Conversation dtoToEntity(ConversationDto conversationDto) {
         return new Conversation()
                 .setId(conversationDto.getId())
-                .setModel(conversationDto.getModel());
+                .setName(conversationDto.getName());
     }
 
     public static ConversationDto entityToDto(Conversation conversation) {
         return new ConversationDto()
                 .setId(conversation.getId())
-                .setModel(conversation.getModel());
+                .setName(conversation.getName());
     }
 
 

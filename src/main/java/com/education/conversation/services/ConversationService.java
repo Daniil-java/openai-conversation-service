@@ -23,8 +23,12 @@ public class ConversationService {
         return conversationRepository.save(Conversation.dtoToEntity(conversationDto));
     }
 
-    public Conversation getById(Long id) {
+    public Conversation getByIdOrThrowException(Long id) {
         return conversationRepository.findById(id)
                 .orElseThrow(() -> new ErrorResponseException(ErrorStatus.CONVERSATION_NOT_FOUND));
+    }
+
+    public Conversation setNameForConversation(Conversation conversation, String content) {
+        return conversationRepository.save(conversation.setName(content));
     }
 }
