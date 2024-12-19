@@ -39,14 +39,15 @@ public class ChatMessage {
     private Conversation conversation;
     private OffsetDateTime created;
 
-    public static ChatMessage newUserMessage(MessageRequestDto messageRequestDto) {
+    public static ChatMessage newUserMessage(MessageRequestDto messageRequestDto, Conversation conversation) {
         return new ChatMessage()
                 .setContent(messageRequestDto.getContent())
                 .setMessageType(MessageType.TEXT)
                 .setRole(ChatRole.USER)
                 .setStatus(MessageStatus.NEW)
                 .setModel(messageRequestDto.getModel())
-                .setTemperature(messageRequestDto.getTemperature());
+                .setTemperature(messageRequestDto.getTemperature())
+                .setConversation(conversation);
     }
 
     public static ChatMessage newAssistantMessage(OpenAiChatCompletionResponse response, Conversation conversation) {

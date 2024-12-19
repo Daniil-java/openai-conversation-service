@@ -34,9 +34,6 @@ public class ChatMessageService {
     }
 
     private ChatMessage processUserMessage(MessageRequestDto messageRequestDto) {
-        if (ChatModel.getEnumOrNull(messageRequestDto.getModel().name()) == null ) {
-            throw new ErrorResponseException(ErrorStatus.MODEL_NOT_SUPPORTED);
-        }
 
         ChatMessage userMessage = makeUserMessage(messageRequestDto);
 
@@ -53,7 +50,7 @@ public class ChatMessageService {
             chatMessageRepository.save(userMessage);
             return chatMessageRepository.save(assistantMessage);
         } catch (Exception e) {
-            setStatusAndErrorDetails(userMessage, MessageStatus.ERROR, ErrorStatus.OPENAI_CONNECTION_ERROR);
+            setStatusAndErrorDetails(userMessage, MessageStatus.ERROR, e.getMessage());
             throw new ErrorResponseException(ErrorStatus.OPENAI_CONNECTION_ERROR);
         }
     }
@@ -94,7 +91,7 @@ public class ChatMessageService {
             chatMessageRepository.save(userMessage);
 
         } catch (InterruptedException e) {
-            setStatusAndErrorDetails(userMessage, MessageStatus.ERROR, ErrorStatus.OPENAI_CONNECTION_ERROR);
+            setStatusAndErrorDetails(userMessage, MessageStatus.ERROR, e.getMessage());
             throw new ErrorResponseException(ErrorStatus.OPENAI_CONNECTION_ERROR);
         }
 
@@ -109,15 +106,14 @@ public class ChatMessageService {
             conversation = conversationService.setNameForConversation(conversation, messageRequestDto.getContent());
         }
 
-        ChatMessage userMessage = ChatMessage.newUserMessage(messageRequestDto);
-        userMessage.setConversation(conversation);
+        ChatMessage userMessage = ChatMessage.newUserMessage(messageRequestDto, conversation);
 
         return chatMessageRepository.save(userMessage);
     }
 
-    private void setStatusAndErrorDetails(ChatMessage userMessage, MessageStatus messageStatus, ErrorStatus errorStatus) {
+    private void setStatusAndErrorDetails(ChatMessage userMessage, MessageStatus messageStatus, String errorStatus) {
         userMessage.setStatus(messageStatus);
-        userMessage.setErrorDetails(errorStatus.getMessage());
+        userMessage.setErrorDetails(errorStatus);
         chatMessageRepository.save(userMessage);
     }
 
