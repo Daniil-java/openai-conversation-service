@@ -1,6 +1,6 @@
 package com.education.conversation.dto.message;
 
-import com.education.conversation.dto.ChatRole;
+import com.education.conversation.dto.enums.ChatRole;
 import com.education.conversation.entities.ChatMessage;
 import lombok.Data;
 import lombok.experimental.Accessors;

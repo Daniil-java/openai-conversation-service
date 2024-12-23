@@ -1,6 +1,5 @@
 package com.education.conversation.entities;
 
-import com.education.conversation.dto.ChatModel;
 import com.education.conversation.dto.ConversationDto;
 import jakarta.persistence.*;
 import lombok.Data;

@@ -1,11 +1,11 @@
 package com.education.conversation.entities;
 
-import com.education.conversation.dto.ChatModel;
-import com.education.conversation.dto.ChatRole;
+import com.education.conversation.dto.AiResponse;
+import com.education.conversation.dto.enums.ChatModel;
+import com.education.conversation.dto.enums.ChatRole;
 import com.education.conversation.dto.message.MessageRequestDto;
-import com.education.conversation.dto.message.MessageStatus;
-import com.education.conversation.dto.message.MessageType;
-import com.education.conversation.dto.openai.OpenAiChatCompletionResponse;
+import com.education.conversation.dto.enums.MessageStatus;
+import com.education.conversation.dto.enums.MessageType;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -50,13 +50,13 @@ public class ChatMessage {
                 .setConversation(conversation);
     }
 
-    public static ChatMessage newAssistantMessage(OpenAiChatCompletionResponse response, Conversation conversation) {
+    public static ChatMessage newAssistantMessage(AiResponse response, Conversation conversation) {
         return new ChatMessage()
-                .setContent(OpenAiChatCompletionResponse.getContent(response))
+                .setContent(response.getContent())
                 .setMessageType(MessageType.TEXT)
-                .setRole(ChatRole.ASSISTANT)
-                .setInputToken(BigDecimal.valueOf(response.getUsage().getPromptTokens()))
-                .setOutputToken(BigDecimal.valueOf(response.getUsage().getCompletionTokens()))
+                .setRole(response.getProviderVariant().getAssistant())
+                .setInputToken(BigDecimal.valueOf(response.getPromptTokens()))
+                .setOutputToken(BigDecimal.valueOf(response.getCompletionTokens()))
                 .setConversation(conversation);
     }
 }
