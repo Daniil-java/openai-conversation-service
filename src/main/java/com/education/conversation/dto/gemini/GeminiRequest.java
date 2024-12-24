@@ -15,13 +15,21 @@ public class GeminiRequest {
 
     public static GeminiRequest makeUserRequest(ChatMessage chatMessage, List<ChatMessage> chatMessages) {
         List<Content> contentList = new ArrayList<>();
+
+        contentList.add(createContent(ChatRole.USER, chatMessage.getContent()));
+
         for (ChatMessage message: chatMessages) {
-            contentList.add(new Content()
-                    .setRole(ChatRole.USER.getValue())
-                    .setParts(List.of(new Content.Part().setText(message.getContent()))));
+            ChatRole role = message.getRole() == ChatRole.ASSISTANT ? ChatRole.MODEL : ChatRole.USER;
+            contentList.add(createContent(role, message.getContent()));
         }
 
         return new GeminiRequest().setContents(contentList);
+    }
+
+    private static Content createContent(ChatRole role, String text) {
+        return new Content()
+                .setRole(role.getValue())
+                .setParts(List.of(new Content.Part().setText(text)));
     }
 
 }

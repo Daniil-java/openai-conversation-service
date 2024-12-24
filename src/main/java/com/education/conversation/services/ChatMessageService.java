@@ -7,9 +7,10 @@ import com.education.conversation.dto.message.MessageResponseDto;
 import com.education.conversation.dto.enums.MessageStatus;
 import com.education.conversation.entities.ChatMessage;
 import com.education.conversation.entities.Conversation;
+import com.education.conversation.entities.Model;
 import com.education.conversation.exceptions.ErrorResponseException;
 import com.education.conversation.exceptions.ErrorStatus;
-import com.education.conversation.providers.ProviderHandler;
+import com.education.conversation.providers.ProviderProcessorHandler;
 import com.education.conversation.repositories.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,15 +28,19 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final ExecutorService executorService;
     private final ConversationService conversationService;
-    private final ProviderHandler providerHandler;
 
-    public MessageResponseDto handleTextMessage(ProviderVariant providerVariant, MessageRequestDto messageRequestDto) {
+    private final ModelService modelService;
+    private final ProviderProcessorHandler providerProcessorHandler;
+
+    public MessageResponseDto handleTextMessage(MessageRequestDto messageRequestDto) {
         //Конвертация данных для выдачи результата контроллеру
         return MessageResponseDto.makeMessageResponseDto(
-                processUserMessage(providerVariant, messageRequestDto));
+                processUserMessage(messageRequestDto));
     }
 
-    private ChatMessage processUserMessage(ProviderVariant providerVariant, MessageRequestDto messageRequestDto) {
+    private ChatMessage processUserMessage(MessageRequestDto messageRequestDto) {
+
+        Model model = modelService.findModelOrThrowError(messageRequestDto.getModel());
 
         //Конвертация дто в сущность
         ChatMessage userMessage = makeUserMessage(messageRequestDto);
@@ -46,7 +51,7 @@ public class ChatMessageService {
 
         try {
             //Получение провайдера по параметру приходящего запроса и исполнение запроса
-            AiResponse response = providerHandler.getProvider(providerVariant)
+            AiResponse response = providerProcessorHandler.getProvider(model.getProvider())
                     .fetchResponse(userMessage, chatMessageList);
 
             //Конвертация ответа в сущность
@@ -61,8 +66,7 @@ public class ChatMessageService {
         }
     }
 
-    private List<ChatMessage> processUserMessageWithResponses(ProviderVariant providerVariant,
-                                                              MessageRequestDto messageRequestDto) {
+    private List<ChatMessage> processUserMessageWithResponses(MessageRequestDto messageRequestDto) {
         int timeoutSeconds = 5;
         int requestCount = 5;
 
@@ -72,11 +76,12 @@ public class ChatMessageService {
                 chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationId());
 
         ArrayList<ChatMessage> chatMessages = new ArrayList<>();
+        Model model = modelService.findModelOrThrowError(messageRequestDto.getModel());
 
         //Concurrency
         List<Callable<AiResponse>> tasks = new ArrayList<>();
         for (int i = 0; i < requestCount; i++) {
-            tasks.add(() -> providerHandler.getProvider(providerVariant)
+            tasks.add(() -> providerProcessorHandler.getProvider(model.getProvider())
                     .fetchResponse(userMessage, conversationMessageList));
         }
 
@@ -124,9 +129,8 @@ public class ChatMessageService {
         chatMessageRepository.save(userMessage);
     }
 
-    public List<MessageResponseDto> handleTextMessageForManyResponses(ProviderVariant providerVariant,
-                                                                      MessageRequestDto messageRequestDto) {
-        return processUserMessageWithResponses(providerVariant, messageRequestDto)
+    public List<MessageResponseDto> handleTextMessageForManyResponses(MessageRequestDto messageRequestDto) {
+        return processUserMessageWithResponses(messageRequestDto)
                 .stream()
                 .map(MessageResponseDto::makeMessageResponseDto)
                 .toList();

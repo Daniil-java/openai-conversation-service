@@ -7,14 +7,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-public interface Provider {
+public interface ProviderProcessor {
 
     AiResponse fetchResponse(ChatMessage userMessage, List<ChatMessage> chatMessageList);
 
     ProviderVariant getProviderName();
 
     @Autowired
-    default void registerMyself(ProviderHandler providerHandler) {
-        providerHandler.register(getProviderName(), this);
+    default void registerMyself(ProviderProcessorHandler providerProcessorHandler) {
+        providerProcessorHandler.register(getProviderName(), this);
     }
 }

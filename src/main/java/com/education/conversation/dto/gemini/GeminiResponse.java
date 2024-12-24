@@ -33,7 +33,6 @@ public class GeminiResponse {
                 .setContent(candidates.get(0).getContent().toString())
                 .setPromptTokens(usageMetadata.getPromptTokenCount())
                 .setCompletionTokens(usageMetadata.getCandidatesTokenCount())
-                .setTotalTokens(usageMetadata.getTotalTokenCount())
-                .setProviderVariant(ProviderVariant.GEMINI);
+                .setTotalTokens(usageMetadata.getTotalTokenCount());
     }
 }

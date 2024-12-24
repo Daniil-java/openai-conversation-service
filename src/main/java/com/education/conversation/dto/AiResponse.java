@@ -1,6 +1,5 @@
 package com.education.conversation.dto;
 
-import com.education.conversation.dto.enums.ProviderVariant;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -13,5 +12,4 @@ public class AiResponse {
     private int promptTokens;
     private int completionTokens;
     private int totalTokens;
-    private ProviderVariant providerVariant;
 }

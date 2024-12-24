@@ -12,11 +12,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class GeminiProvider implements Provider {
+public class GeminiProviderProcessor implements ProviderProcessor {
     private final GeminiFeignClient geminiFeignClient;
     private final String aiKey;
 
-    public GeminiProvider(@Value("${GEMINI_TOKEN}") String aiKey, GeminiFeignClient geminiFeignClient) {
+    public GeminiProviderProcessor(@Value("${GEMINI_TOKEN}") String aiKey, GeminiFeignClient geminiFeignClient) {
         this.geminiFeignClient = geminiFeignClient;
         this.aiKey = aiKey;
     }

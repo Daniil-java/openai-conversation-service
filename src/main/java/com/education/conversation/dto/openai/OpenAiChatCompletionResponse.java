@@ -26,7 +26,6 @@ public class OpenAiChatCompletionResponse {
                 .setContent(getContent())
                 .setPromptTokens(usage.getPromptTokens())
                 .setCompletionTokens(usage.getCompletionTokens())
-                .setTotalTokens(usage.getTotalTokens())
-                .setProviderVariant(ProviderVariant.OPENAI);
+                .setTotalTokens(usage.getTotalTokens());
     }
 }

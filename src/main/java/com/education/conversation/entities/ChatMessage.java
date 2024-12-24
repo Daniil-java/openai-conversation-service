@@ -54,7 +54,7 @@ public class ChatMessage {
         return new ChatMessage()
                 .setContent(response.getContent())
                 .setMessageType(MessageType.TEXT)
-                .setRole(response.getProviderVariant().getAssistant())
+                .setRole(ChatRole.ASSISTANT)
                 .setInputToken(BigDecimal.valueOf(response.getPromptTokens()))
                 .setOutputToken(BigDecimal.valueOf(response.getCompletionTokens()))
                 .setConversation(conversation);

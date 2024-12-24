@@ -12,12 +12,12 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class OpenAiProvider implements Provider {
+public class OpenAiProviderProcessor implements ProviderProcessor {
 
     private final OpenAiFeignClient openAiFeignClient;
     private final String aiKey;
 
-    public OpenAiProvider(@Value("${GENERATION_TOKEN}") String aiKey, OpenAiFeignClient openAiFeignClient) {
+    public OpenAiProviderProcessor(@Value("${GENERATION_TOKEN}") String aiKey, OpenAiFeignClient openAiFeignClient) {
         this.aiKey = aiKey;
         this.openAiFeignClient = openAiFeignClient;
     }
