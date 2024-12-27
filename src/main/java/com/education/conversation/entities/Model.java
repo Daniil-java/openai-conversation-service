@@ -22,7 +22,7 @@ public class Model {
 
     @Enumerated(EnumType.STRING)
     private ProviderVariant provider;
-    private String model;
+    private String modelName;
     private String description;
     @UpdateTimestamp
     private OffsetDateTime updated;

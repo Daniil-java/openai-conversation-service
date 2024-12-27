@@ -1,7 +1,7 @@
 package com.education.conversation.dto.openai;
 
-import com.education.conversation.dto.enums.ChatModel;
 import com.education.conversation.entities.ChatMessage;
+import com.education.conversation.entities.Model;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -17,12 +17,12 @@ public class OpenAiChatCompletionRequest {
     public static final float TEMPERATURE_DEFAULT = 0.1f;
 
     public static OpenAiChatCompletionRequest makeRequest(
-            List<ChatMessage> chatMessageList, ChatModel chatModel, Float temperature) {
+            List<ChatMessage> chatMessageList, Model model, Float temperature) {
 
         if (temperature == null) temperature = OpenAiChatCompletionRequest.TEMPERATURE_DEFAULT;
         return new OpenAiChatCompletionRequest()
                         .setTemperature(temperature)
-                        .setModel(chatModel.getModel())
+                        .setModel(model.getModelName())
                         .setMessages(Message.convertFromChatMessages(chatMessageList));
     }
 }

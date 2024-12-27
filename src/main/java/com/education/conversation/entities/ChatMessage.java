@@ -1,7 +1,6 @@
 package com.education.conversation.entities;
 
 import com.education.conversation.dto.AiResponse;
-import com.education.conversation.dto.enums.ChatModel;
 import com.education.conversation.dto.enums.ChatRole;
 import com.education.conversation.dto.message.MessageRequestDto;
 import com.education.conversation.dto.enums.MessageStatus;
@@ -27,7 +26,11 @@ public class ChatMessage {
     @Enumerated(EnumType.STRING)
     private ChatRole role;
     private String content;
-    private ChatModel model;
+
+    @ManyToOne
+    @JoinColumn(name = "model_id")
+    private Model model;
+
     private Float temperature;
     private MessageType messageType;
     private String errorDetails;
@@ -39,13 +42,14 @@ public class ChatMessage {
     private Conversation conversation;
     private OffsetDateTime created;
 
-    public static ChatMessage newUserMessage(MessageRequestDto messageRequestDto, Conversation conversation) {
+    public static ChatMessage newUserMessage(
+            MessageRequestDto messageRequestDto, Conversation conversation, Model model) {
         return new ChatMessage()
                 .setContent(messageRequestDto.getContent())
                 .setMessageType(MessageType.TEXT)
                 .setRole(ChatRole.USER)
                 .setStatus(MessageStatus.NEW)
-                .setModel(messageRequestDto.getModel())
+                .setModel(model)
                 .setTemperature(messageRequestDto.getTemperature())
                 .setConversation(conversation);
     }

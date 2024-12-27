@@ -1,7 +1,6 @@
 package com.education.conversation.services;
 
 import com.education.conversation.dto.AiResponse;
-import com.education.conversation.dto.enums.ProviderVariant;
 import com.education.conversation.dto.message.MessageRequestDto;
 import com.education.conversation.dto.message.MessageResponseDto;
 import com.education.conversation.dto.enums.MessageStatus;
@@ -39,9 +38,6 @@ public class ChatMessageService {
     }
 
     private ChatMessage processUserMessage(MessageRequestDto messageRequestDto) {
-
-        Model model = modelService.findModelOrThrowError(messageRequestDto.getModel());
-
         //Конвертация дто в сущность
         ChatMessage userMessage = makeUserMessage(messageRequestDto);
 
@@ -51,7 +47,7 @@ public class ChatMessageService {
 
         try {
             //Получение провайдера по параметру приходящего запроса и исполнение запроса
-            AiResponse response = providerProcessorHandler.getProvider(model.getProvider())
+            AiResponse response = providerProcessorHandler.getProvider(userMessage.getModel().getProvider())
                     .fetchResponse(userMessage, chatMessageList);
 
             //Конвертация ответа в сущность
@@ -114,11 +110,13 @@ public class ChatMessageService {
         Conversation conversation = conversationService
                 .getByIdOrThrowException(messageRequestDto.getConversationId());
 
+        Model model = modelService.findModelOrThrowError(messageRequestDto.getModel());
+
         if (conversation.getName() == null) {
             conversation = conversationService.setNameForConversation(conversation, messageRequestDto.getContent());
         }
 
-        ChatMessage userMessage = ChatMessage.newUserMessage(messageRequestDto, conversation);
+        ChatMessage userMessage = ChatMessage.newUserMessage(messageRequestDto, conversation, model);
 
         return chatMessageRepository.save(userMessage);
     }

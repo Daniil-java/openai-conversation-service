@@ -8,5 +8,4 @@ import lombok.experimental.Accessors;
 public class ConversationDto {
     private Long id;
     private String name;
-    private ProviderDto providerDto;
 }

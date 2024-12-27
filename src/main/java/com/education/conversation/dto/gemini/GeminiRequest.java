@@ -13,10 +13,8 @@ import java.util.List;
 public class GeminiRequest {
     private List<Content> contents;
 
-    public static GeminiRequest makeUserRequest(ChatMessage chatMessage, List<ChatMessage> chatMessages) {
+    public static GeminiRequest makeUserRequest(List<ChatMessage> chatMessages) {
         List<Content> contentList = new ArrayList<>();
-
-        contentList.add(createContent(ChatRole.USER, chatMessage.getContent()));
 
         for (ChatMessage message: chatMessages) {
             ChatRole role = message.getRole() == ChatRole.ASSISTANT ? ChatRole.MODEL : ChatRole.USER;

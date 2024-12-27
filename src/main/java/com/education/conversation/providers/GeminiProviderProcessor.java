@@ -24,10 +24,10 @@ public class GeminiProviderProcessor implements ProviderProcessor {
     @Override
     public AiResponse fetchResponse(ChatMessage userMessage, List<ChatMessage> chatMessageList) {
 
-        GeminiRequest request = GeminiRequest.makeUserRequest(userMessage, chatMessageList);
+        GeminiRequest request = GeminiRequest.makeUserRequest(chatMessageList);
 
         GeminiResponse response = geminiFeignClient.generate(
-                userMessage.getModel().getModel(), aiKey, request);
+                userMessage.getModel().getModelName(), aiKey, request);
 
         return response.toAiResponse();
     }

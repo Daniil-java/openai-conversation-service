@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface ModelRepository extends JpaRepository<Model, Long> {
 
-    @Query(value = "SELECT * FROM models m WHERE m.model = ?1", nativeQuery = true)
-    Optional<Model> findByModel(String model);
+    @Query(value = "SELECT * FROM models m WHERE m.model_name = ?1", nativeQuery = true)
+    Optional<Model> findByModelName(String model);
 
 }

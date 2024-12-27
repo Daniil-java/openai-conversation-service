@@ -16,7 +16,7 @@ public class ModelService {
     private final ModelRepository modelRepository;
 
     public Model findModelOrThrowError(ChatModel chatModel) {
-        return modelRepository.findByModel(chatModel.getModel())
+        return modelRepository.findByModelName(chatModel.getModel())
                 .orElseThrow(() -> new ErrorResponseException(ErrorStatus.PROVIDER_NOT_FOUND));
     }
 }
