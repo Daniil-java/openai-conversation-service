@@ -1,14 +1,15 @@
 package com.education.conversation.services;
 
-import com.education.conversation.dto.ChatModel;
+import com.education.conversation.dto.AiResponse;
 import com.education.conversation.dto.message.MessageRequestDto;
 import com.education.conversation.dto.message.MessageResponseDto;
-import com.education.conversation.dto.message.MessageStatus;
-import com.education.conversation.dto.openai.OpenAiChatCompletionResponse;
+import com.education.conversation.dto.enums.MessageStatus;
 import com.education.conversation.entities.ChatMessage;
 import com.education.conversation.entities.Conversation;
+import com.education.conversation.entities.Model;
 import com.education.conversation.exceptions.ErrorResponseException;
 import com.education.conversation.exceptions.ErrorStatus;
+import com.education.conversation.providers.ProviderProcessorHandler;
 import com.education.conversation.repositories.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,26 +25,32 @@ import java.util.concurrent.*;
 public class ChatMessageService {
 
     private final ChatMessageRepository chatMessageRepository;
-    private final OpenAiService openAiService;
     private final ExecutorService executorService;
     private final ConversationService conversationService;
 
+    private final ModelService modelService;
+    private final ProviderProcessorHandler providerProcessorHandler;
+
     public MessageResponseDto handleTextMessage(MessageRequestDto messageRequestDto) {
+        //Конвертация данных для выдачи результата контроллеру
         return MessageResponseDto.makeMessageResponseDto(
                 processUserMessage(messageRequestDto));
     }
 
     private ChatMessage processUserMessage(MessageRequestDto messageRequestDto) {
-
+        //Конвертация дто в сущность
         ChatMessage userMessage = makeUserMessage(messageRequestDto);
 
+        //Получение контекста беседы
         List<ChatMessage> chatMessageList =
                 chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationId());
 
         try {
-            OpenAiChatCompletionResponse response = openAiService
-                    .fetchResponse(userMessage, chatMessageList, messageRequestDto.getTemperature());
+            //Получение провайдера по параметру приходящего запроса и исполнение запроса
+            AiResponse response = providerProcessorHandler.getProvider(userMessage.getModel().getProvider())
+                    .fetchResponse(userMessage, chatMessageList);
 
+            //Конвертация ответа в сущность
             ChatMessage assistantMessage = ChatMessage.newAssistantMessage(response, userMessage.getConversation());
             userMessage.setStatus(MessageStatus.DONE);
 
@@ -65,19 +72,20 @@ public class ChatMessageService {
                 chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationId());
 
         ArrayList<ChatMessage> chatMessages = new ArrayList<>();
+        Model model = modelService.findModelOrThrowError(messageRequestDto.getModel());
 
         //Concurrency
-        List<Callable<OpenAiChatCompletionResponse>> tasks = new ArrayList<>();
+        List<Callable<AiResponse>> tasks = new ArrayList<>();
         for (int i = 0; i < requestCount; i++) {
-            tasks.add(() -> openAiService.fetchResponse(
-                    userMessage, conversationMessageList, messageRequestDto.getTemperature()));
+            tasks.add(() -> providerProcessorHandler.getProvider(model.getProvider())
+                    .fetchResponse(userMessage, conversationMessageList));
         }
 
         try {
             // Отправляем все задачи и получаем список Future
-            List<Future<OpenAiChatCompletionResponse>> futures = executorService.invokeAll(tasks);
+            List<Future<AiResponse>> futures = executorService.invokeAll(tasks);
             try {
-                for (Future<OpenAiChatCompletionResponse> future : futures) {
+                for (Future<AiResponse> future : futures) {
                     ChatMessage assistantMessage = ChatMessage.newAssistantMessage(
                             future.get(timeoutSeconds, TimeUnit.SECONDS), userMessage.getConversation());
 
@@ -102,11 +110,13 @@ public class ChatMessageService {
         Conversation conversation = conversationService
                 .getByIdOrThrowException(messageRequestDto.getConversationId());
 
+        Model model = modelService.findModelOrThrowError(messageRequestDto.getModel());
+
         if (conversation.getName() == null) {
             conversation = conversationService.setNameForConversation(conversation, messageRequestDto.getContent());
         }
 
-        ChatMessage userMessage = ChatMessage.newUserMessage(messageRequestDto, conversation);
+        ChatMessage userMessage = ChatMessage.newUserMessage(messageRequestDto, conversation, model);
 
         return chatMessageRepository.save(userMessage);
     }
@@ -123,5 +133,7 @@ public class ChatMessageService {
                 .map(MessageResponseDto::makeMessageResponseDto)
                 .toList();
     }
+
+
 
 }

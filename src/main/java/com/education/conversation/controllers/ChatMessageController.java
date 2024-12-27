@@ -1,5 +1,6 @@
 package com.education.conversation.controllers;
 
+import com.education.conversation.dto.enums.ProviderVariant;
 import com.education.conversation.dto.message.MessageRequestDto;
 import com.education.conversation.dto.message.MessageResponseDto;
 import com.education.conversation.services.ChatMessageService;
@@ -15,7 +16,7 @@ import java.util.List;
 public class ChatMessageController {
     private final ChatMessageService chatMessageService;
 
-    @PostMapping("/messages")
+    @PostMapping("/messages/")
     public MessageResponseDto sendMessage(@RequestBody @Validated MessageRequestDto messageRequestDto) {
         return chatMessageService.handleTextMessage(messageRequestDto);
     }

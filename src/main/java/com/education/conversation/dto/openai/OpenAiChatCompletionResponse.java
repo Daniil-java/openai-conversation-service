@@ -1,5 +1,7 @@
 package com.education.conversation.dto.openai;
 
+import com.education.conversation.dto.AiResponse;
+import com.education.conversation.dto.enums.ProviderVariant;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -15,7 +17,15 @@ public class OpenAiChatCompletionResponse {
     private Usage usage;
     private String systemFingerprint;
 
-    public static String getContent(OpenAiChatCompletionResponse response) {
-        return response.getChoices().get(0).getMessage().getContent();
+    public String getContent() {
+        return choices.get(0).getMessage().getContent();
+    }
+
+    public AiResponse toAiResponse() {
+        return new AiResponse()
+                .setContent(getContent())
+                .setPromptTokens(usage.getPromptTokens())
+                .setCompletionTokens(usage.getCompletionTokens())
+                .setTotalTokens(usage.getTotalTokens());
     }
 }

@@ -1,6 +1,6 @@
 package com.education.conversation.dto.message;
 
-import com.education.conversation.dto.ChatModel;
+import com.education.conversation.dto.enums.ChatModel;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.experimental.Accessors;
