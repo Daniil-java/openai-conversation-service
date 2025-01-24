@@ -1,6 +1,5 @@
 package com.education.conversation.controllers;
 
-import com.education.conversation.dto.enums.ProviderVariant;
 import com.education.conversation.dto.message.MessageRequestDto;
 import com.education.conversation.dto.message.MessageResponseDto;
 import com.education.conversation.services.ChatMessageService;

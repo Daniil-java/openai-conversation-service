@@ -31,7 +31,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor {
         OpenAiChatCompletionResponse response =
                 openAiFeignClient.generate("Bearer " + aiKey, request);
 
-        return response.toAiResponse();
+        return response.toAiResponse(userMessage.getModel());
     }
 
     @Override
