@@ -29,7 +29,7 @@ public class GeminiProviderProcessor implements ProviderProcessor {
         GeminiResponse response = geminiFeignClient.generate(
                 userMessage.getModel().getModelName(), aiKey, request);
 
-        return response.toAiResponse();
+        return response.toAiResponse(userMessage.getModel());
     }
 
     @Override

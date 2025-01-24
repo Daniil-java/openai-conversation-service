@@ -4,12 +4,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @Accessors(chain = true)
 public class AiResponse {
     private String content;
-    private int promptTokens;
-    private int completionTokens;
-    private int totalTokens;
+    private BigDecimal promptTokens;
+    private BigDecimal completionTokens;
+    private BigDecimal totalTokens;
 }

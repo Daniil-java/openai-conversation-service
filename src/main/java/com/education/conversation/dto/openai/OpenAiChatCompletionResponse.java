@@ -1,10 +1,11 @@
 package com.education.conversation.dto.openai;
 
 import com.education.conversation.dto.AiResponse;
-import com.education.conversation.dto.enums.ProviderVariant;
+import com.education.conversation.entities.Model;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.math.BigDecimal;
 import java.util.List;
 @Data
 @Accessors(chain = true)
@@ -21,11 +22,17 @@ public class OpenAiChatCompletionResponse {
         return choices.get(0).getMessage().getContent();
     }
 
-    public AiResponse toAiResponse() {
+    public AiResponse toAiResponse(Model model) {
+        BigDecimal input = model.getInputMultiplier()
+                .multiply(BigDecimal.valueOf(usage.getPromptTokens()));
+        BigDecimal output = model.getOutputMultiplier()
+                .multiply(BigDecimal.valueOf(usage.getCompletionTokens()));
+
         return new AiResponse()
                 .setContent(getContent())
-                .setPromptTokens(usage.getPromptTokens())
-                .setCompletionTokens(usage.getCompletionTokens())
-                .setTotalTokens(usage.getTotalTokens());
+                .setPromptTokens(input)
+                .setCompletionTokens(output)
+                .setTotalTokens(input.add(output));
     }
+
 }
