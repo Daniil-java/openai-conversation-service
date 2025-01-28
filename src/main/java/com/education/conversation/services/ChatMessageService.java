@@ -59,21 +59,25 @@ public class ChatMessageService {
                     .fetchResponse(userMessage, chatMessageList);
 
             //Конвертация ответа в сущность
-            ChatMessage assistantMessage = ChatMessage.newAssistantMessage(response, userMessage.getConversation());
-            userMessage.setStatus(MessageStatus.DONE);
+            ChatMessage assistantMessage = ChatMessage.newAssistantMessage(
+                    response,
+                    userMessage,
+                    messageRequestDto.getTemperature()
+            );
 
+            userMessage.setStatus(MessageStatus.DONE);
             //Вычитание токенов с баланса пользователя
             user.setBalance(user.getBalance()
                     .subtract(assistantMessage.getInputToken()
                             .add(assistantMessage.getOutputToken()))
             );
-
             chatMessageRepository.save(userMessage);
 
+            assistantMessage.setStatus(MessageStatus.DONE);
             return chatMessageRepository.save(assistantMessage);
         } catch (Exception e) {
             setStatusAndErrorDetails(userMessage, MessageStatus.ERROR, e.getMessage());
-            throw new ErrorResponseException(ErrorStatus.OPENAI_CONNECTION_ERROR);
+            throw new ErrorResponseException(ErrorStatus.AI_CONNECTION_ERROR);
         }
     }
 
@@ -104,14 +108,19 @@ public class ChatMessageService {
         try {
             // Отправляем все задачи и получаем список Future
             List<Future<AiResponse>> futures = executorService.invokeAll(tasks);
-            BigDecimal tokenCount = BigDecimal.ZERO;
             try {
                 for (Future<AiResponse> future : futures) {
                     ChatMessage assistantMessage = ChatMessage.newAssistantMessage(
-                            future.get(timeoutSeconds, TimeUnit.SECONDS), userMessage.getConversation());
+                            future.get(timeoutSeconds, TimeUnit.SECONDS),
+                            userMessage,
+                            messageRequestDto.getTemperature()
+                    );
 
                     chatMessages.add(chatMessageRepository.save(assistantMessage));
-                    tokenCount.subtract(assistantMessage.getOutputToken().add(assistantMessage.getInputToken()));
+
+                    user.setBalance(user.getBalance().subtract(
+                            assistantMessage.getOutputToken().add(assistantMessage.getInputToken()))
+                    );
                 }
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 log.error("Concurrency error!", e);
@@ -123,7 +132,7 @@ public class ChatMessageService {
 
         } catch (InterruptedException e) {
             setStatusAndErrorDetails(userMessage, MessageStatus.ERROR, e.getMessage());
-            throw new ErrorResponseException(ErrorStatus.OPENAI_CONNECTION_ERROR);
+            throw new ErrorResponseException(ErrorStatus.AI_CONNECTION_ERROR);
         }
 
         return chatMessages;

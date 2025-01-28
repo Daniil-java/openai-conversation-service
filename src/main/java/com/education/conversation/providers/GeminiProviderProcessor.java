@@ -2,8 +2,8 @@ package com.education.conversation.providers;
 
 import com.education.conversation.dto.AiResponse;
 import com.education.conversation.dto.enums.ProviderVariant;
-import com.education.conversation.dto.gemini.GeminiRequest;
-import com.education.conversation.dto.gemini.GeminiResponse;
+import com.education.conversation.dto.models.gemini.GeminiRequest;
+import com.education.conversation.dto.models.gemini.GeminiResponse;
 import com.education.conversation.entities.ChatMessage;
 import com.education.conversation.integrations.GeminiFeignClient;
 import org.springframework.beans.factory.annotation.Value;

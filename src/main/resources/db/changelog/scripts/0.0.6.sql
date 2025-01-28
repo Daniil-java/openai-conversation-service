@@ -13,10 +13,14 @@ CREATE TABLE IF NOT EXISTS users (
 ALTER TABLE conversations
     ADD user_id INTEGER REFERENCES users(id);
 
+ALTER TABLE chat_messages
+    ADD native_tokens_sum decimal,
+    ADD general_tokens_sum decimal;
+
 ALTER TABLE models
-    ADD input_multiplier decimal(8, 4),
-    ADD output_multiplier decimal(8, 4),
-    ADD cached_multiplier decimal(8, 4);
+    ADD input_multiplier decimal(8, 4) not null,
+    ADD output_multiplier decimal(8, 4) not null,
+    ADD cached_multiplier decimal(8, 4) not null;
 
 INSERT INTO models (provider, model_name, input_multiplier, output_multiplier, cached_multiplier)
 VALUES ('OPENAI', 'gpt-4o', 2.50, 1.25, 10.00);

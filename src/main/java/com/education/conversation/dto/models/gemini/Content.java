@@ -1,4 +1,4 @@
-package com.education.conversation.dto.gemini;
+package com.education.conversation.dto.models.gemini;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
