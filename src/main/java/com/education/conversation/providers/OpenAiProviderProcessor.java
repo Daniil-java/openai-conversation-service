@@ -2,8 +2,8 @@ package com.education.conversation.providers;
 
 import com.education.conversation.dto.AiResponse;
 import com.education.conversation.dto.enums.ProviderVariant;
-import com.education.conversation.dto.openai.OpenAiChatCompletionRequest;
-import com.education.conversation.dto.openai.OpenAiChatCompletionResponse;
+import com.education.conversation.dto.models.openai.OpenAiChatCompletionRequest;
+import com.education.conversation.dto.models.openai.OpenAiChatCompletionResponse;
 import com.education.conversation.entities.ChatMessage;
 import com.education.conversation.integrations.OpenAiFeignClient;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +22,6 @@ public class OpenAiProviderProcessor implements ProviderProcessor {
         this.openAiFeignClient = openAiFeignClient;
     }
 
-
     @Override
     public AiResponse fetchResponse(ChatMessage userMessage, List<ChatMessage> chatMessageList) {
         OpenAiChatCompletionRequest request = OpenAiChatCompletionRequest.makeRequest(
@@ -31,7 +30,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor {
         OpenAiChatCompletionResponse response =
                 openAiFeignClient.generate("Bearer " + aiKey, request);
 
-        return response.toAiResponse();
+        return response.toAiResponse(userMessage.getModel());
     }
 
     @Override

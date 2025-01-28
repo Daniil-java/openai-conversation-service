@@ -1,7 +1,6 @@
-package com.education.conversation.dto.gemini;
+package com.education.conversation.dto.models.gemini;
 
-import com.education.conversation.dto.AiResponse;
-import com.education.conversation.dto.enums.ProviderVariant;
+import com.education.conversation.dto.models.BaseResponse;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -9,7 +8,7 @@ import java.util.List;
 
 @Data
 @Accessors(chain = true)
-public class GeminiResponse {
+public class GeminiResponse extends BaseResponse {
     private List<Candidate> candidates;
     private UsageMetadata usageMetadata;
     private String modelVersion;
@@ -28,11 +27,18 @@ public class GeminiResponse {
         private Integer totalTokenCount;
     }
 
-    public AiResponse toAiResponse() {
-        return new AiResponse()
-                .setContent(candidates.get(0).getContent().toString())
-                .setPromptTokens(usageMetadata.getPromptTokenCount())
-                .setCompletionTokens(usageMetadata.getCandidatesTokenCount())
-                .setTotalTokens(usageMetadata.getTotalTokenCount());
+    @Override
+    protected String getContent() {
+        return candidates.get(0).getContent().toString();
+    }
+
+    @Override
+    protected int getPromptTokenCount() {
+        return usageMetadata.getPromptTokenCount();
+    }
+
+    @Override
+    protected int getCompletionTokenCount() {
+        return usageMetadata.getCandidatesTokenCount();
     }
 }

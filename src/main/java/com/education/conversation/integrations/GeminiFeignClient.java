@@ -1,7 +1,7 @@
 package com.education.conversation.integrations;
 
-import com.education.conversation.dto.gemini.GeminiRequest;
-import com.education.conversation.dto.gemini.GeminiResponse;
+import com.education.conversation.dto.models.gemini.GeminiRequest;
+import com.education.conversation.dto.models.gemini.GeminiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 

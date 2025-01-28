@@ -36,6 +36,8 @@ public class ChatMessage {
     private String errorDetails;
     private BigDecimal inputToken;
     private BigDecimal outputToken;
+    private BigDecimal nativeTokensSum;
+    private BigDecimal generalTokensSum;
     private MessageStatus status;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id")
@@ -54,13 +56,25 @@ public class ChatMessage {
                 .setConversation(conversation);
     }
 
-    public static ChatMessage newAssistantMessage(AiResponse response, Conversation conversation) {
+    public static ChatMessage newAssistantMessage(AiResponse response,
+                                                  ChatMessage userMessage,
+                                                  float temperature) {
+        BigDecimal nativeTokensSum = response.getCompletionTokens().add(response.getPromptTokens());
+        BigDecimal generalTokensSum =
+                response.getPromptTokens().multiply(userMessage.getModel().getInputMultiplier())
+                .add(response.getCompletionTokens().multiply(userMessage.getModel().getOutputMultiplier()));
+
         return new ChatMessage()
                 .setContent(response.getContent())
                 .setMessageType(MessageType.TEXT)
                 .setRole(ChatRole.ASSISTANT)
-                .setInputToken(BigDecimal.valueOf(response.getPromptTokens()))
-                .setOutputToken(BigDecimal.valueOf(response.getCompletionTokens()))
-                .setConversation(conversation);
+                .setInputToken(response.getPromptTokens())
+                .setOutputToken(response.getCompletionTokens())
+                .setConversation(userMessage.getConversation())
+                .setNativeTokensSum(nativeTokensSum)
+                .setGeneralTokensSum(generalTokensSum)
+                .setTemperature(temperature)
+                .setModel(userMessage.getModel())
+                ;
     }
 }
