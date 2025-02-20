@@ -58,7 +58,7 @@ public class ChatMessage {
 
     public static ChatMessage newAssistantMessage(AiResponse response,
                                                   ChatMessage userMessage,
-                                                  float temperature) {
+                                                  Float temperature) {
         BigDecimal nativeTokensSum = response.getCompletionTokens().add(response.getPromptTokens());
         BigDecimal generalTokensSum =
                 response.getPromptTokens().multiply(userMessage.getModel().getInputMultiplier())

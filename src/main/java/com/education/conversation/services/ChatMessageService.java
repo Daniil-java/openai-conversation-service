@@ -33,10 +33,14 @@ public class ChatMessageService {
     private final ProviderProcessorHandler providerProcessorHandler;
     private final UserService userService;
 
+    private final static int TIMEOUT_SECONDS = 5;
+    private final static int REQUEST_COUNT = 5;
+
     public MessageResponseDto handleTextMessage(MessageRequestDto messageRequestDto) {
         //Конвертация данных для выдачи результата контроллеру
-        return MessageResponseDto.makeMessageResponseDto(
+        MessageResponseDto messageResponseDto = MessageResponseDto.makeMessageResponseDto(
                 processUserMessage(messageRequestDto));
+        return messageResponseDto;
     }
 
     private ChatMessage processUserMessage(MessageRequestDto messageRequestDto) {
@@ -53,38 +57,37 @@ public class ChatMessageService {
             throw new ErrorResponseException(ErrorStatus.USER_INSUFFICIENT_FUNDS);
         }
 
+        ChatMessage assistantMessage;
         try {
             //Получение провайдера по параметру приходящего запроса и исполнение запроса
-            AiResponse response = providerProcessorHandler.getProvider(userMessage.getModel().getProvider())
+             AiResponse response = providerProcessorHandler
+                    .getProvider(userMessage.getModel().getProvider())
                     .fetchResponse(userMessage, chatMessageList);
 
             //Конвертация ответа в сущность
-            ChatMessage assistantMessage = ChatMessage.newAssistantMessage(
+            assistantMessage = ChatMessage.newAssistantMessage(
                     response,
                     userMessage,
                     messageRequestDto.getTemperature()
             );
-
-            userMessage.setStatus(MessageStatus.DONE);
-            //Вычитание токенов с баланса пользователя
-            user.setBalance(user.getBalance()
-                    .subtract(assistantMessage.getInputToken()
-                            .add(assistantMessage.getOutputToken()))
-            );
-            chatMessageRepository.save(userMessage);
-
-            assistantMessage.setStatus(MessageStatus.DONE);
-            return chatMessageRepository.save(assistantMessage);
         } catch (Exception e) {
             setStatusAndErrorDetails(userMessage, MessageStatus.ERROR, e.getMessage());
             throw new ErrorResponseException(ErrorStatus.AI_CONNECTION_ERROR);
         }
+
+        userMessage.setStatus(MessageStatus.DONE);
+        //Вычитание токенов с баланса пользователя
+        user.setBalance(user.getBalance()
+                .subtract(assistantMessage.getInputToken()
+                        .add(assistantMessage.getOutputToken()))
+        );
+        chatMessageRepository.save(userMessage);
+
+        assistantMessage.setStatus(MessageStatus.DONE);
+        return chatMessageRepository.save(assistantMessage);
     }
 
     private List<ChatMessage> processUserMessageWithResponses(MessageRequestDto messageRequestDto) {
-        int timeoutSeconds = 5;
-        int requestCount = 5;
-
         ChatMessage userMessage = makeUserMessage(messageRequestDto);
 
         List<ChatMessage> conversationMessageList =
@@ -100,7 +103,7 @@ public class ChatMessageService {
 
         //Concurrency
         List<Callable<AiResponse>> tasks = new ArrayList<>();
-        for (int i = 0; i < requestCount; i++) {
+        for (int i = 0; i < REQUEST_COUNT; i++) {
             tasks.add(() -> providerProcessorHandler.getProvider(userMessage.getModel().getProvider())
                     .fetchResponse(userMessage, conversationMessageList));
         }
@@ -111,7 +114,7 @@ public class ChatMessageService {
             try {
                 for (Future<AiResponse> future : futures) {
                     ChatMessage assistantMessage = ChatMessage.newAssistantMessage(
-                            future.get(timeoutSeconds, TimeUnit.SECONDS),
+                            future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS),
                             userMessage,
                             messageRequestDto.getTemperature()
                     );
