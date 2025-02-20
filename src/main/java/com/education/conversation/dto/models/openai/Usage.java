@@ -1,4 +1,4 @@
-package com.education.conversation.dto.openai;
+package com.education.conversation.dto.models.openai;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

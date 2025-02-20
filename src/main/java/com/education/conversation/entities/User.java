@@ -1,6 +1,5 @@
 package com.education.conversation.entities;
 
-import com.education.conversation.dto.enums.ProviderVariant;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,25 +11,22 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "models")
+@Table(name = "users")
 @Data
 @NoArgsConstructor
 @Accessors(chain = true)
-public class Model {
+public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    private ProviderVariant provider;
-    private String modelName;
-    private String description;
-    private BigDecimal inputMultiplier;
-    private BigDecimal outputMultiplier;
-    private BigDecimal cachedMultiplier;
-
+    private String name;
+    private BigDecimal balance;
     @UpdateTimestamp
     private OffsetDateTime updated;
     @CreationTimestamp
     private OffsetDateTime created;
+
+
 }

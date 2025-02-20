@@ -7,6 +7,7 @@ import com.education.conversation.dto.enums.MessageStatus;
 import com.education.conversation.entities.ChatMessage;
 import com.education.conversation.entities.Conversation;
 import com.education.conversation.entities.Model;
+import com.education.conversation.entities.User;
 import com.education.conversation.exceptions.ErrorResponseException;
 import com.education.conversation.exceptions.ErrorStatus;
 import com.education.conversation.providers.ProviderProcessorHandler;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -27,9 +29,9 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final ExecutorService executorService;
     private final ConversationService conversationService;
-
     private final ModelService modelService;
     private final ProviderProcessorHandler providerProcessorHandler;
+    private final UserService userService;
 
     public MessageResponseDto handleTextMessage(MessageRequestDto messageRequestDto) {
         //Конвертация данных для выдачи результата контроллеру
@@ -45,20 +47,37 @@ public class ChatMessageService {
         List<ChatMessage> chatMessageList =
                 chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationId());
 
+        User user = userService.findByIdOrThrowError(userMessage.getConversation().getId());
+
+        if (user.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ErrorResponseException(ErrorStatus.USER_INSUFFICIENT_FUNDS);
+        }
+
         try {
             //Получение провайдера по параметру приходящего запроса и исполнение запроса
             AiResponse response = providerProcessorHandler.getProvider(userMessage.getModel().getProvider())
                     .fetchResponse(userMessage, chatMessageList);
 
             //Конвертация ответа в сущность
-            ChatMessage assistantMessage = ChatMessage.newAssistantMessage(response, userMessage.getConversation());
-            userMessage.setStatus(MessageStatus.DONE);
+            ChatMessage assistantMessage = ChatMessage.newAssistantMessage(
+                    response,
+                    userMessage,
+                    messageRequestDto.getTemperature()
+            );
 
+            userMessage.setStatus(MessageStatus.DONE);
+            //Вычитание токенов с баланса пользователя
+            user.setBalance(user.getBalance()
+                    .subtract(assistantMessage.getInputToken()
+                            .add(assistantMessage.getOutputToken()))
+            );
             chatMessageRepository.save(userMessage);
+
+            assistantMessage.setStatus(MessageStatus.DONE);
             return chatMessageRepository.save(assistantMessage);
         } catch (Exception e) {
             setStatusAndErrorDetails(userMessage, MessageStatus.ERROR, e.getMessage());
-            throw new ErrorResponseException(ErrorStatus.OPENAI_CONNECTION_ERROR);
+            throw new ErrorResponseException(ErrorStatus.AI_CONNECTION_ERROR);
         }
     }
 
@@ -71,13 +90,18 @@ public class ChatMessageService {
         List<ChatMessage> conversationMessageList =
                 chatMessageRepository.findAllByConversation_Id(messageRequestDto.getConversationId());
 
+        User user = userService.findByIdOrThrowError(userMessage.getConversation().getId());
+
+        if (user.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ErrorResponseException(ErrorStatus.USER_INSUFFICIENT_FUNDS);
+        }
+
         ArrayList<ChatMessage> chatMessages = new ArrayList<>();
-        Model model = modelService.findModelOrThrowError(messageRequestDto.getModel());
 
         //Concurrency
         List<Callable<AiResponse>> tasks = new ArrayList<>();
         for (int i = 0; i < requestCount; i++) {
-            tasks.add(() -> providerProcessorHandler.getProvider(model.getProvider())
+            tasks.add(() -> providerProcessorHandler.getProvider(userMessage.getModel().getProvider())
                     .fetchResponse(userMessage, conversationMessageList));
         }
 
@@ -87,9 +111,16 @@ public class ChatMessageService {
             try {
                 for (Future<AiResponse> future : futures) {
                     ChatMessage assistantMessage = ChatMessage.newAssistantMessage(
-                            future.get(timeoutSeconds, TimeUnit.SECONDS), userMessage.getConversation());
+                            future.get(timeoutSeconds, TimeUnit.SECONDS),
+                            userMessage,
+                            messageRequestDto.getTemperature()
+                    );
 
                     chatMessages.add(chatMessageRepository.save(assistantMessage));
+
+                    user.setBalance(user.getBalance().subtract(
+                            assistantMessage.getOutputToken().add(assistantMessage.getInputToken()))
+                    );
                 }
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 log.error("Concurrency error!", e);
@@ -97,10 +128,11 @@ public class ChatMessageService {
 
             userMessage.setStatus(MessageStatus.DONE);
             chatMessageRepository.save(userMessage);
+            userService.save(user);
 
         } catch (InterruptedException e) {
             setStatusAndErrorDetails(userMessage, MessageStatus.ERROR, e.getMessage());
-            throw new ErrorResponseException(ErrorStatus.OPENAI_CONNECTION_ERROR);
+            throw new ErrorResponseException(ErrorStatus.AI_CONNECTION_ERROR);
         }
 
         return chatMessages;

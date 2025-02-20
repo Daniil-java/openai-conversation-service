@@ -1,10 +1,9 @@
-package com.education.conversation.dto.openai;
+package com.education.conversation.dto.models.openai;
 
 import com.education.conversation.entities.ChatMessage;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Data

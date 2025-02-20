@@ -1,4 +1,4 @@
-package com.education.conversation.dto.gemini;
+package com.education.conversation.dto.models.gemini;
 
 import com.education.conversation.dto.enums.ChatRole;
 import com.education.conversation.entities.ChatMessage;
