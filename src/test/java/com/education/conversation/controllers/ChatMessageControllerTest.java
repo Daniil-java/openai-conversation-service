@@ -7,10 +7,7 @@ import com.education.conversation.dto.message.MessageResponseDto;
 import com.education.conversation.dto.models.gemini.Content;
 import com.education.conversation.dto.models.gemini.GeminiResponse;
 import com.education.conversation.integrations.GeminiFeignClient;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,6 +22,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -47,8 +45,7 @@ public class ChatMessageControllerTest {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgreSQLContainer =
-            new PostgreSQLContainer<>("postgres:15.3");
+    static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:15.3");
     @Autowired
     MockMvc mockMvc;
     @MockitoBean
@@ -63,16 +60,21 @@ public class ChatMessageControllerTest {
     private MessageResponseDto expectedResponseDto;
     private GeminiResponse geminiResponse;
 
+    @AfterAll
+    void tearDown() {
+        postgreSQLContainer.stop();
+    }
+
     @BeforeAll
     void setUpDatabase() {
-        // Загружаем данные в контейнер базы данных один раз для всех тестов
-        jdbcTemplate.update("INSERT INTO users (id, name, balance) VALUES (?, ?, ?)", 1L, "test", 100);
+        postgreSQLContainer.start();
+        jdbcTemplate.update("INSERT INTO users (id, name) VALUES (?, ?)", 1L, "test");
         jdbcTemplate.update("INSERT INTO conversations (id, user_id) VALUES (?, ?)", 1L, 1L);
     }
 
     @BeforeEach
     void setUp() {
-        jdbcTemplate.update("UPDATE users SET balance = ? WHERE id = ?", 100, 1L);
+        jdbcTemplate.update("UPDATE users SET balance = ? WHERE id = ?", BigDecimal.ONE, 1L);
 
         requestDto = new MessageRequestDto()
                 .setContent("Test")
@@ -102,8 +104,18 @@ public class ChatMessageControllerTest {
 
     }
 
+    private BigDecimal getBalance(Long userId) {
+        String getQuery = "SELECT * FROM users WHERE id = ?";
+        return jdbcTemplate.queryForObject(
+                getQuery, new Object[]{userId}, (rs, rowNum) -> rs.getBigDecimal("balance")
+        );
+    }
+
+
     @Test
     void sendMessage_ReturnMessageResponseDto() throws Exception {
+        assertEquals(getBalance(1L), BigDecimal.ONE, "Ошибка начальных параметров");
+
         doReturn(geminiResponse).when(geminiFeignClient).generate(any(), any(), any());
 
         this.mockMvc.perform(post("/api/v1/messages/")
@@ -114,10 +126,13 @@ public class ChatMessageControllerTest {
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
                         content().json(objectMapper.writeValueAsString(expectedResponseDto))
                 );
+
+        assertEquals(getBalance(1L).compareTo(BigDecimal.ZERO), -1);
     }
 
     @Test
     void sendMessageForManyResponses_ReturnListMessageResponseDto() throws Exception {
+        assertEquals(getBalance(1L), BigDecimal.ONE, "Ошибка начальных параметров");
 
         doReturn(geminiResponse).when(geminiFeignClient).generate(any(), any(), any());
 
@@ -129,6 +144,8 @@ public class ChatMessageControllerTest {
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
                         jsonPath("$.size()").value(5)
                 );
+
+        assertEquals(getBalance(1L).compareTo(BigDecimal.ZERO), -1);
     }
 
 }
