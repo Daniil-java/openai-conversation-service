@@ -15,8 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -37,12 +39,16 @@ import java.util.List;
 @AutoConfigureMockMvc
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestPropertySource(properties = {
+        "GEMINI_TOKEN=GEMINI_TOKEN",
+        "GENERATION_TOKEN=GENERATION_TOKEN"
+})
 public class ChatMessageControllerTest {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:15.3");
-
+    static PostgreSQLContainer<?> postgreSQLContainer =
+            new PostgreSQLContainer<>("postgres:15.3");
     @Autowired
     MockMvc mockMvc;
     @MockitoBean
@@ -98,7 +104,6 @@ public class ChatMessageControllerTest {
 
     @Test
     void sendMessage_ReturnMessageResponseDto() throws Exception {
-
         doReturn(geminiResponse).when(geminiFeignClient).generate(any(), any(), any());
 
         this.mockMvc.perform(post("/api/v1/messages/")
